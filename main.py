@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from dbconnection import setup_db, get_connection
+import psycopg2.extras
+from dbconnection import setup_db, get_connection_dict
 
 app = FastAPI(title="Grand Prize Only — Traffic API")
 
@@ -18,7 +19,7 @@ def startup():
 # ── GET /violations ───────────────────────────────────────────────
 @app.get("/violations")
 def get_violations(limit: int = 200):
-    conn = get_connection()
+    conn = get_connection_dict()
     try:
         with conn.cursor() as cur:
             cur.execute("""
@@ -47,7 +48,7 @@ def get_violations(limit: int = 200):
 # ── GET /repeat-offenders ─────────────────────────────────────────
 @app.get("/repeat-offenders")
 def get_repeat_offenders(threshold: int = 3):
-    conn = get_connection()
+    conn = get_connection_dict()
     try:
         with conn.cursor() as cur:
             cur.execute("""
@@ -72,7 +73,7 @@ def get_repeat_offenders(threshold: int = 3):
 # ── GET /stats ────────────────────────────────────────────────────
 @app.get("/stats")
 def get_stats():
-    conn = get_connection()
+    conn = get_connection_dict()
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) AS total FROM violations")
@@ -84,17 +85,14 @@ def get_stats():
             cur.execute("""
                 SELECT violation_type, COUNT(*) AS cnt
                 FROM violations
-                GROUP BY violation_type
-                ORDER BY cnt DESC
+                GROUP BY violation_type ORDER BY cnt DESC
             """)
             by_type = {r["violation_type"]: r["cnt"] for r in cur.fetchall()}
 
             cur.execute("""
                 SELECT junction, COUNT(*) AS cnt
                 FROM violations
-                GROUP BY junction
-                ORDER BY cnt DESC
-                LIMIT 8
+                GROUP BY junction ORDER BY cnt DESC LIMIT 8
             """)
             by_junction = {r["junction"]: r["cnt"] for r in cur.fetchall()}
 
@@ -108,13 +106,9 @@ def get_stats():
         conn.close()
 
 # ── GET /analytics ────────────────────────────────────────────────
-# This matches exactly what App.jsx Analytics component expects:
-# data.total, data.by_type[].violation_type + count,
-# data.by_junction[].junction + count,
-# data.by_hour[].hour (int) + count
 @app.get("/analytics")
 def get_analytics():
-    conn = get_connection()
+    conn = get_connection_dict()
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) AS total FROM violations")
@@ -123,36 +117,24 @@ def get_analytics():
             cur.execute("""
                 SELECT violation_type, COUNT(*) AS count
                 FROM violations
-                GROUP BY violation_type
-                ORDER BY count DESC
+                GROUP BY violation_type ORDER BY count DESC
             """)
-            by_type = [
-                {"violation_type": r["violation_type"], "count": r["count"]}
-                for r in cur.fetchall()
-            ]
+            by_type = [{"violation_type": r["violation_type"], "count": r["count"]} for r in cur.fetchall()]
 
             cur.execute("""
                 SELECT junction, COUNT(*) AS count
                 FROM violations
-                GROUP BY junction
-                ORDER BY count DESC
-                LIMIT 8
+                GROUP BY junction ORDER BY count DESC LIMIT 8
             """)
-            by_junction = [
-                {"junction": r["junction"], "count": r["count"]}
-                for r in cur.fetchall()
-            ]
+            by_junction = [{"junction": r["junction"], "count": r["count"]} for r in cur.fetchall()]
 
             cur.execute("""
-                SELECT HOUR(timestamp) AS hour, COUNT(*) AS count
+                SELECT EXTRACT(HOUR FROM timestamp) AS hour, COUNT(*) AS count
                 FROM violations
-                GROUP BY HOUR(timestamp)
+                GROUP BY EXTRACT(HOUR FROM timestamp)
                 ORDER BY hour
             """)
-            by_hour = [
-                {"hour": r["hour"], "count": r["count"]}
-                for r in cur.fetchall()
-            ]
+            by_hour = [{"hour": int(r["hour"]), "count": r["count"]} for r in cur.fetchall()]
 
         return {
             "total":       total,
@@ -166,16 +148,15 @@ def get_analytics():
 # ── GET /search ───────────────────────────────────────────────────
 @app.get("/search")
 def search_plate(plate: str = ""):
-    conn = get_connection()
+    conn = get_connection_dict()
     try:
         with conn.cursor() as cur:
             cur.execute("""
                 SELECT plate, violation_type, junction,
                        signal_state, timestamp
                 FROM violations
-                WHERE plate LIKE %s
-                ORDER BY timestamp DESC
-                LIMIT 50
+                WHERE plate ILIKE %s
+                ORDER BY timestamp DESC LIMIT 50
             """, (f"%{plate.upper()}%",))
             rows = cur.fetchall()
         return [
@@ -194,13 +175,13 @@ def search_plate(plate: str = ""):
 # ── DELETE /clear ─────────────────────────────────────────────────
 @app.delete("/clear")
 def clear_db():
-    conn = get_connection()
+    conn = get_connection_dict()
     try:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM violations")
             cur.execute("DELETE FROM offender_counts")
             conn.commit()
-        return {"status": "cleared", "message": "Database cleared successfully"}
+        return {"status": "cleared"}
     finally:
         conn.close()
 
