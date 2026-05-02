@@ -119,19 +119,18 @@ This project was developed in **four key milestones** — each focusing on a maj
 ---
 ## ⚙️ Tech Stack
 
-| Category | Tools / Technologies Used |
-|-----------|---------------------------|
-| **Programming Language** | Python 3 |
-| **Deep Learning Framework** | YOLOv8 (Ultralytics) |
-| **Computer Vision** | OpenCV |
-| **Database** | MySQL |
-| **Backend Integration** | Flask |
-| **Frontend Dashboard** | HTML, CSS, JavaScript |
-| **Data Handling & Visualization** | Pandas, Matplotlib |
-| **Model Optimization** | ONNX Runtime, Torch |
+| Category | Technology |
+|---|---|
+| **Programming Language** | Python 3.10 + JavaScript |
+| **Deep Learning** | YOLOv8 (Ultralytics) |
+| **Computer Vision** | OpenCV + EasyOCR |
+| **Plate Validation** | Custom Rwanda format validator |
+| **Database** | PostgreSQL via Supabase (cloud) |
+| **Backend API** | FastAPI + Uvicorn |
+| **Frontend** | React + Chakra UI |
+| **Charts** | Recharts |
+| **Deployment** | Vercel (dashboard) + Render (API) + Supabase (DB) |
 | **Version Control** | Git & GitHub |
-| **Large File Storage** | Git LFS |
-| **Deployment Environment** | Local + Edge Device (Jetson / CPU) |
 ## 🧠 System Architecture
 
 The entire pipeline works as an integrated system performing detection, classification, and decision-making in real-time.
