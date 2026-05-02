@@ -169,7 +169,6 @@ The system was tested on various real-world traffic footage and datasets to eval
 
 - Integrate **Edge AI hardware** (e.g., NVIDIA Jetson Nano) for on-site processing.
 - Build a **mobile app interface** for live monitoring by traffic authorities.
-- Add **multi-language OCR** to support all Indian regional number plates.
 - Implement **cloud-based dashboards** for city-wide analytics and reports.
 - Extend the system to detect other violations like **signal jumping**, **wrong-lane driving**, etc.
 
